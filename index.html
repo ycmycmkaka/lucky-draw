@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>萬能抽號器 🍀</title>
+    <style>
+        body { font-family: -apple-system, system-ui, sans-serif; padding: 20px; background: #f0f2f5; display: flex; justify-content: center; }
+        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        h2 { color: #1c1e21; text-align: center; margin-bottom: 20px; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: #4b4f56; font-size: 14px; }
+        input { width: 100%; padding: 12px; border: 1.5px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
+        input:focus { border-color: #007aff; outline: none; }
+        button { width: 100%; padding: 14px; background: #007aff; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:active { transform: scale(0.98); }
+        #result-container { margin-top: 20px; background: #f8f9fa; border-radius: 12px; padding: 15px; display: none; }
+        #result { white-space: pre-wrap; font-family: monospace; font-size: 14px; color: #333; line-height: 1.6; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>萬能抽號器 🍀</h2>
+    
+    <div class="input-group">
+        <label>1. 遊戲規則 (範圍 抽幾個)</label>
+        <input type="text" id="rule" value="50 7">
+    </div>
+    <div class="input-group">
+        <label>2. 排除數字 (空格分開)</label>
+        <input type="text" id="exclude" placeholder="例如: 4 14 24">
+    </div>
+    <div class="input-group">
+        <label>3. 單數數量</label>
+        <input type="number" id="odds" value="4">
+    </div>
+    <div class="input-group">
+        <label>4. 相連組數 (0代表不相連)</label>
+        <input type="number" id="consec" value="0">
+    </div>
+    <div class="input-group">
+        <label>5. 抽幾多組？</label>
+        <input type="number" id="batch" value="1">
+    </div>
+
+    <button onclick="generate()">立即抽號碼</button>
+
+    <div id="result-container">
+        <div id="result"></div>
+    </div>
+</div>
+
+<script>
+function countConsecutive(nums) {
+    let count = 0;
+    for (let i = 0; i < nums.length - 1; i++) {
+        if (nums[i+1] - nums[i] === 1) count++;
+    }
+    return count;
+}
+
+function generate() {
+    const rule = document.getElementById('rule').value.trim().split(/\s+/);
+    const maxNum = parseInt(rule[0]);
+    const pick = parseInt(rule[1]);
+    const exclude = document.getElementById('exclude').value.split(/\s+/).map(Number).filter(n => n > 0);
+    const targetOdds = parseInt(document.getElementById('odds').value);
+    const targetConsec = parseInt(document.getElementById('consec').value);
+    const batchCount = parseInt(document.getElementById('batch').value);
+    
+    const targetEvens = pick - targetOdds;
+    const pool = [];
+    for (let i = 1; i <= maxNum; i++) if (!exclude.includes(i)) pool.push(i);
+
+    const oddsP = pool.filter(n => n % 2 !== 0);
+    const evensP = pool.filter(n => n % 2 === 0);
+
+    if (targetOdds < 0 || targetOdds > pick) {
+        alert(`單數數量必須喺 0-${pick} 之間！`); return;
+    }
+    if (oddsP.length < targetOdds || evensP.length < targetEvens) {
+        alert("錯誤：號碼池唔夠抽！請檢查排除名單。"); return;
+    }
+
+    let finalResults = [];
+    for (let b = 0; b < batchCount; b++) {
+        let found = false;
+        for (let attempt = 0; attempt < 30000; attempt++) {
+            let sOdds = oddsP.sort(() => Math.random() - 0.5).slice(0, targetOdds);
+            let sEvens = evensP.sort(() => Math.random() - 0.5).slice(0, targetEvens);
+            let cand = [...sOdds, ...sEvens].sort((a, b) => a - b);
+
+            if (countConsecutive(cand) === targetConsec) {
+                finalResults.push(`第 ${b+1} 組: ${cand.join(', ')}`);
+                found = true; break;
+            }
+        }
+        if (!found) finalResults.push(`第 ${b+1} 組: 搵唔到合適組合`);
+    }
+
+    document.getElementById('result-container').style.display = 'block';
+    document.getElementById('result').innerText = finalResults.join('\n') + `\n\n(設定: 1-${maxNum}抽${pick}, ${targetOdds}單${targetEvens}雙, 相連${targetConsec}組)`;
+}
+</script>
+</body>
+</html>
