@@ -29,15 +29,15 @@
     </div>
     <div class="input-group">
         <label>2. 排除數字 (空格分開)</label>
-        <input type="text" id="exclude" placeholder="例如: 4 14 24">
+        <input type="text" id="exclude" placeholder="例如: 4 14 24 (冇就留空)">
     </div>
     <div class="input-group">
-        <label>3. 單數數量</label>
-        <input type="number" id="odds" value="4">
+        <label>3. 單數數量 (可留空)</label>
+        <input type="number" id="odds" placeholder="留空代表隨機">
     </div>
     <div class="input-group">
-        <label>4. 相連組數 (0代表不相連)</label>
-        <input type="number" id="consec" value="0">
+        <label>4. 相連組數 (可留空)</label>
+        <input type="number" id="consec" placeholder="留空代表隨機">
     </div>
     <div class="input-group">
         <label>5. 抽幾多組？</label>
@@ -65,33 +65,56 @@ function generate() {
     const maxNum = parseInt(rule[0]);
     const pick = parseInt(rule[1]);
     const exclude = document.getElementById('exclude').value.split(/\s+/).map(Number).filter(n => n > 0);
-    const targetOdds = parseInt(document.getElementById('odds').value);
-    const targetConsec = parseInt(document.getElementById('consec').value);
-    const batchCount = parseInt(document.getElementById('batch').value);
     
-    const targetEvens = pick - targetOdds;
+    const oddsStr = document.getElementById('odds').value.trim();
+    const consecStr = document.getElementById('consec').value.trim();
+    const useOdds = oddsStr !== '';
+    const useConsec = consecStr !== '';
+    const targetOdds = useOdds ? parseInt(oddsStr) : null;
+    const targetConsec = useConsec ? parseInt(consecStr) : null;
+    
+    const batchCount = parseInt(document.getElementById('batch').value) || 1;
+    
     const pool = [];
     for (let i = 1; i <= maxNum; i++) if (!exclude.includes(i)) pool.push(i);
+
+    if (pool.length < pick) {
+        alert("錯誤：號碼池唔夠號碼抽！"); return;
+    }
 
     const oddsP = pool.filter(n => n % 2 !== 0);
     const evensP = pool.filter(n => n % 2 === 0);
 
-    if (targetOdds < 0 || targetOdds > pick) {
-        alert(`單數數量必須喺 0-${pick} 之間！`); return;
-    }
-    if (oddsP.length < targetOdds || evensP.length < targetEvens) {
-        alert("錯誤：號碼池唔夠抽！請檢查排除名單。"); return;
+    if (useOdds) {
+        const targetEvens = pick - targetOdds;
+        if (targetOdds < 0 || targetOdds > pick) {
+            alert(`單數數量必須喺 0-${pick} 之間！`); return;
+        }
+        if (oddsP.length < targetOdds || evensP.length < targetEvens) {
+            alert("錯誤：號碼池唔夠單/雙數！請檢查排除名單。"); return;
+        }
     }
 
     let finalResults = [];
     for (let b = 0; b < batchCount; b++) {
         let found = false;
         for (let attempt = 0; attempt < 30000; attempt++) {
-            let sOdds = oddsP.sort(() => Math.random() - 0.5).slice(0, targetOdds);
-            let sEvens = evensP.sort(() => Math.random() - 0.5).slice(0, targetEvens);
-            let cand = [...sOdds, ...sEvens].sort((a, b) => a - b);
+            let cand = [];
+            if (useOdds) {
+                let targetEvens = pick - targetOdds;
+                let sOdds = oddsP.sort(() => Math.random() - 0.5).slice(0, targetOdds);
+                let sEvens = evensP.sort(() => Math.random() - 0.5).slice(0, targetEvens);
+                cand = [...sOdds, ...sEvens].sort((a, b) => a - b);
+            } else {
+                cand = pool.sort(() => Math.random() - 0.5).slice(0, pick).sort((a, b) => a - b);
+            }
 
-            if (countConsecutive(cand) === targetConsec) {
+            if (useConsec) {
+                if (countConsecutive(cand) === targetConsec) {
+                    finalResults.push(`第 ${b+1} 組: ${cand.join(', ')}`);
+                    found = true; break;
+                }
+            } else {
                 finalResults.push(`第 ${b+1} 組: ${cand.join(', ')}`);
                 found = true; break;
             }
@@ -99,9 +122,15 @@ function generate() {
         if (!found) finalResults.push(`第 ${b+1} 組: 搵唔到合適組合`);
     }
 
+    let conditionText = `(設定: 1-${maxNum}抽${pick}`;
+    if (useOdds) conditionText += `, ${targetOdds}單${pick-targetOdds}雙`;
+    if (useConsec) conditionText += `, 相連${targetConsec}組`;
+    conditionText += `)`;
+
     document.getElementById('result-container').style.display = 'block';
-    document.getElementById('result').innerText = finalResults.join('\n') + `\n\n(設定: 1-${maxNum}抽${pick}, ${targetOdds}單${targetEvens}雙, 相連${targetConsec}組)`;
+    document.getElementById('result').innerText = finalResults.join('\n') + `\n\n` + conditionText;
 }
 </script>
+
 </body>
 </html>
