@@ -3,19 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>萬能抽號器 🍀</title>
+    <title>萬能抽號器 🍀 & 六合彩抽號器 🎱</title>
     <style>
-        body { font-family: -apple-system, system-ui, sans-serif; padding: 20px; background: #f0f2f5; display: flex; justify-content: center; }
+        /* 更新排版，等兩個卡片可以並排 */
+        body { font-family: -apple-system, system-ui, sans-serif; padding: 20px; background: #f0f2f5; display: flex; justify-content: center; align-items: flex-start; gap: 20px; flex-wrap: wrap; }
         .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-        h2 { color: #1c1e21; text-align: center; margin-bottom: 20px; }
+        h2 { color: #1c1e21; text-align: center; margin-bottom: 20px; font-size: 24px; }
         .input-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: 600; color: #4b4f56; font-size: 14px; }
         input { width: 100%; padding: 12px; border: 1.5px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 16px; }
         input:focus { border-color: #007aff; outline: none; }
-        button { width: 100%; padding: 14px; background: #007aff; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        
+        button { width: 100%; padding: 14px; background: #007aff; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s; }
+        button.m6-btn { background: #ff9500; } /* 六合彩專用掣顏色 */
         button:active { transform: scale(0.98); }
-        #result-container { margin-top: 20px; background: #f8f9fa; border-radius: 12px; padding: 15px; display: none; }
-        #result { white-space: pre-wrap; font-family: monospace; font-size: 14px; color: #333; line-height: 1.6; }
+        
+        .result-container { margin-top: 20px; background: #f8f9fa; border-radius: 12px; padding: 15px; display: none; }
+        .result { white-space: pre-wrap; font-family: monospace; font-size: 14px; color: #333; line-height: 1.6; }
+        
+        /* 六合彩波波專屬樣式 */
+        .ball { display: inline-block; width: 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 50%; color: white; font-weight: bold; margin: 2px 4px; font-family: sans-serif; box-shadow: 1px 1px 3px rgba(0,0,0,0.2); }
+        .ball-red { background: #ff3b30; }
+        .ball-green { background: #34c759; }
+        .ball-blue { background: #007aff; }
+        .m6-row { display: flex; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
     </style>
 </head>
 <body>
@@ -46,12 +57,40 @@
 
     <button onclick="generate()">立即抽號碼</button>
 
-    <div id="result-container">
-        <div id="result"></div>
+    <div id="result-container" class="result-container">
+        <div id="result" class="result"></div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>六合彩顏色抽號器 🎱</h2>
+    
+    <div class="input-group">
+        <label>🔴 紅波數量 (加埋要等於 6)</label>
+        <input type="number" id="m6-red" placeholder="例如: 2 (全空代表隨機)">
+    </div>
+    <div class="input-group">
+        <label>🟢 綠波數量 (加埋要等於 6)</label>
+        <input type="number" id="m6-green" placeholder="例如: 2 (全空代表隨機)">
+    </div>
+    <div class="input-group">
+        <label>🔵 藍波數量 (加埋要等於 6)</label>
+        <input type="number" id="m6-blue" placeholder="例如: 2 (全空代表隨機)">
+    </div>
+    <div class="input-group">
+        <label>🎲 抽幾多注？</label>
+        <input type="number" id="m6-batch" value="1">
+    </div>
+
+    <button class="m6-btn" onclick="generateMarkSix()">立即抽六合彩</button>
+
+    <div id="m6-result-container" class="result-container">
+        <div id="m6-result" class="result"></div>
     </div>
 </div>
 
 <script>
+// --- 原本萬能抽號器的邏輯 ---
 function countConsecutive(nums) {
     let count = 0;
     for (let i = 0; i < nums.length - 1; i++) {
@@ -129,6 +168,59 @@ function generate() {
 
     document.getElementById('result-container').style.display = 'block';
     document.getElementById('result').innerText = finalResults.join('\n') + `\n\n` + conditionText;
+}
+
+
+// --- 新增的六合彩抽號器邏輯 ---
+const M6_RED = [1, 2, 7, 8, 12, 13, 18, 19, 23, 24, 29, 30, 34, 35, 40, 45];
+const M6_BLUE = [3, 4, 9, 10, 14, 15, 20, 25, 26, 31, 36, 37, 41, 42, 47, 48];
+const M6_GREEN = [5, 6, 11, 16, 17, 21, 22, 27, 28, 32, 33, 38, 39, 43, 44, 46, 49];
+
+function generateMarkSix() {
+    let rStr = document.getElementById('m6-red').value.trim();
+    let gStr = document.getElementById('m6-green').value.trim();
+    let bStr = document.getElementById('m6-blue').value.trim();
+    let batch = parseInt(document.getElementById('m6-batch').value) || 1;
+
+    let isRandom = (rStr === '' && gStr === '' && bStr === '');
+    let rCount = parseInt(rStr) || 0;
+    let gCount = parseInt(gStr) || 0;
+    let bCount = parseInt(bStr) || 0;
+
+    if (!isRandom && (rCount + gCount + bCount !== 6)) {
+        alert("⚠️ 紅、綠、藍波數量加埋必須啱啱好等於 6 個！\n如果你想完全隨機，可以留空晒三個框框。");
+        return;
+    }
+
+    let finalResults = [];
+    for (let b = 0; b < batch; b++) {
+        let cand = [];
+        if (isRandom) {
+            let all = [...M6_RED, ...M6_GREEN, ...M6_BLUE];
+            cand = all.sort(() => Math.random() - 0.5).slice(0, 6);
+        } else {
+            let sRed = [...M6_RED].sort(() => Math.random() - 0.5).slice(0, rCount);
+            let sGreen = [...M6_GREEN].sort(() => Math.random() - 0.5).slice(0, gCount);
+            let sBlue = [...M6_BLUE].sort(() => Math.random() - 0.5).slice(0, bCount);
+            cand = [...sRed, ...sGreen, ...sBlue];
+        }
+        
+        // 排好數字順序
+        cand.sort((a, b) => a - b);
+        
+        // 幫數字加上對應顏色的 CSS class
+        let htmlBalls = cand.map(num => {
+            let colorClass = M6_RED.includes(num) ? 'ball-red' : M6_GREEN.includes(num) ? 'ball-green' : 'ball-blue';
+            return `<span class="ball ${colorClass}">${num}</span>`;
+        }).join('');
+        
+        finalResults.push(`<div class="m6-row"><strong style="width: 70px;">第 ${b+1} 注：</strong> ${htmlBalls}</div>`);
+    }
+
+    let conditionText = `<div style="margin-top:15px; font-size:12px; color:#666; border-top:1px dashed #ccc; padding-top:10px;">(設定: ${isRandom ? '完全隨機抽出 6 個波' : `指定紅波x${rCount}, 綠波x${gCount}, 藍波x${bCount}`})</div>`;
+
+    document.getElementById('m6-result-container').style.display = 'block';
+    document.getElementById('m6-result').innerHTML = finalResults.join('') + conditionText;
 }
 </script>
 
