@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>萬能抽號器 🍀 & 六合彩抽號器 🎱</title>
     <style>
-        /* 更新排版，等兩個卡片可以並排 */
+        /* 排版設定，等兩個卡片可以並排 */
         body { font-family: -apple-system, system-ui, sans-serif; padding: 20px; background: #f0f2f5; display: flex; justify-content: center; align-items: flex-start; gap: 20px; flex-wrap: wrap; }
         .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
         h2 { color: #1c1e21; text-align: center; margin-bottom: 20px; font-size: 24px; }
@@ -66,16 +66,16 @@
     <h2>六合彩顏色抽號器 🎱</h2>
     
     <div class="input-group">
-        <label>🔴 紅波數量 (加埋要等於 6)</label>
-        <input type="number" id="m6-red" placeholder="例如: 2 (全空代表隨機)">
+        <label>🔴 紅波數量</label>
+        <input type="number" id="m6-red" placeholder="例如: 3 (留空代表隨機補位)">
     </div>
     <div class="input-group">
-        <label>🟢 綠波數量 (加埋要等於 6)</label>
-        <input type="number" id="m6-green" placeholder="例如: 2 (全空代表隨機)">
+        <label>🟢 綠波數量</label>
+        <input type="number" id="m6-green" placeholder="例如: 2 (留空代表隨機補位)">
     </div>
     <div class="input-group">
-        <label>🔵 藍波數量 (加埋要等於 6)</label>
-        <input type="number" id="m6-blue" placeholder="例如: 2 (全空代表隨機)">
+        <label>🔵 藍波數量</label>
+        <input type="number" id="m6-blue" placeholder="留空代表隨機補位">
     </div>
     <div class="input-group">
         <label>🎲 抽幾多注？</label>
@@ -90,7 +90,9 @@
 </div>
 
 <script>
-// --- 原本萬能抽號器的邏輯 ---
+// ==========================================
+// 萬能抽號器邏輯
+// ==========================================
 function countConsecutive(nums) {
     let count = 0;
     for (let i = 0; i < nums.length - 1; i++) {
@@ -171,7 +173,9 @@ function generate() {
 }
 
 
-// --- 新增的六合彩抽號器邏輯 ---
+// ==========================================
+// 六合彩顏色抽號器邏輯
+// ==========================================
 const M6_RED = [1, 2, 7, 8, 12, 13, 18, 19, 23, 24, 29, 30, 34, 35, 40, 45];
 const M6_BLUE = [3, 4, 9, 10, 14, 15, 20, 25, 26, 31, 36, 37, 41, 42, 47, 48];
 const M6_GREEN = [5, 6, 11, 16, 17, 21, 22, 27, 28, 32, 33, 38, 39, 43, 44, 46, 49];
@@ -182,33 +186,62 @@ function generateMarkSix() {
     let bStr = document.getElementById('m6-blue').value.trim();
     let batch = parseInt(document.getElementById('m6-batch').value) || 1;
 
-    let isRandom = (rStr === '' && gStr === '' && bStr === '');
-    let rCount = parseInt(rStr) || 0;
-    let gCount = parseInt(gStr) || 0;
-    let bCount = parseInt(bStr) || 0;
+    // 將輸入轉做數字，留空就係 null
+    let rCount = rStr !== '' ? parseInt(rStr) : null;
+    let gCount = gStr !== '' ? parseInt(gStr) : null;
+    let bCount = bStr !== '' ? parseInt(bStr) : null;
 
-    if (!isRandom && (rCount + gCount + bCount !== 6)) {
-        alert("⚠️ 紅、綠、藍波數量加埋必須啱啱好等於 6 個！\n如果你想完全隨機，可以留空晒三個框框。");
+    // 計算總共指定咗幾多個波
+    let specifiedTotal = (rCount || 0) + (gCount || 0) + (bCount || 0);
+
+    if (specifiedTotal > 6) {
+        alert("⚠️ 指定嘅波數量加埋唔可以超過 6 個！");
         return;
     }
 
     let finalResults = [];
     for (let b = 0; b < batch; b++) {
         let cand = [];
-        if (isRandom) {
-            let all = [...M6_RED, ...M6_GREEN, ...M6_BLUE];
-            cand = all.sort(() => Math.random() - 0.5).slice(0, 6);
+        let remainingPool = []; // 用嚟裝留空顏色嘅波
+
+        // 1. 處理指定數量嘅顏色，留空就將該顏色放入 remainingPool
+        if (rCount !== null) {
+            if (rCount > M6_RED.length) { alert("⚠️ 紅波數量超過上限！"); return; }
+            cand.push(...[...M6_RED].sort(() => Math.random() - 0.5).slice(0, rCount));
         } else {
-            let sRed = [...M6_RED].sort(() => Math.random() - 0.5).slice(0, rCount);
-            let sGreen = [...M6_GREEN].sort(() => Math.random() - 0.5).slice(0, gCount);
-            let sBlue = [...M6_BLUE].sort(() => Math.random() - 0.5).slice(0, bCount);
-            cand = [...sRed, ...sGreen, ...sBlue];
+            remainingPool.push(...M6_RED);
         }
-        
-        // 排好數字順序
+
+        if (gCount !== null) {
+            if (gCount > M6_GREEN.length) { alert("⚠️ 綠波數量超過上限！"); return; }
+            cand.push(...[...M6_GREEN].sort(() => Math.random() - 0.5).slice(0, gCount));
+        } else {
+            remainingPool.push(...M6_GREEN);
+        }
+
+        if (bCount !== null) {
+            if (bCount > M6_BLUE.length) { alert("⚠️ 藍波數量超過上限！"); return; }
+            cand.push(...[...M6_BLUE].sort(() => Math.random() - 0.5).slice(0, bCount));
+        } else {
+            remainingPool.push(...M6_BLUE);
+        }
+
+        // 2. 抽剩餘需要嘅波
+        let remainingPick = 6 - specifiedTotal;
+        if (remainingPick > 0) {
+            // 防呆：如果三隻色都填晒數字，但加埋唔夠 6 個 (例如 1紅 1綠 1藍)
+            if (remainingPool.length === 0) {
+                alert("⚠️ 你填晒三隻色，但加埋唔夠 6 個！\n請確保三個加埋等於 6，或者留空其中一啲色等系統補位。");
+                return;
+            }
+            // 喺 remainingPool 隨機抽補位波
+            cand.push(...remainingPool.sort(() => Math.random() - 0.5).slice(0, remainingPick));
+        }
+
+        // 3. 排好數字順序
         cand.sort((a, b) => a - b);
         
-        // 幫數字加上對應顏色的 CSS class
+        // 4. 幫數字加上對應顏色嘅 CSS class
         let htmlBalls = cand.map(num => {
             let colorClass = M6_RED.includes(num) ? 'ball-red' : M6_GREEN.includes(num) ? 'ball-green' : 'ball-blue';
             return `<span class="ball ${colorClass}">${num}</span>`;
@@ -217,7 +250,13 @@ function generateMarkSix() {
         finalResults.push(`<div class="m6-row"><strong style="width: 70px;">第 ${b+1} 注：</strong> ${htmlBalls}</div>`);
     }
 
-    let conditionText = `<div style="margin-top:15px; font-size:12px; color:#666; border-top:1px dashed #ccc; padding-top:10px;">(設定: ${isRandom ? '完全隨機抽出 6 個波' : `指定紅波x${rCount}, 綠波x${gCount}, 藍波x${bCount}`})</div>`;
+    // 整理底部顯示嘅設定條件
+    let condArr = [];
+    if (rCount !== null) condArr.push(`紅波x${rCount}`);
+    if (gCount !== null) condArr.push(`綠波x${gCount}`);
+    if (bCount !== null) condArr.push(`藍波x${bCount}`);
+    
+    let conditionText = `<div style="margin-top:15px; font-size:12px; color:#666; border-top:1px dashed #ccc; padding-top:10px;">(設定: ${condArr.length === 0 ? '完全隨機抽出 6 個波' : condArr.join(', ') + '，其餘隨機補位'})</div>`;
 
     document.getElementById('m6-result-container').style.display = 'block';
     document.getElementById('m6-result').innerHTML = finalResults.join('') + conditionText;
