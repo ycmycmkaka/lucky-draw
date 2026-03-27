@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>萬能抽號器 🍀 & 六合彩抽號器 🎱</title>
     <style>
-        /* 排版設定，等兩個卡片可以並排 */
         body { font-family: -apple-system, system-ui, sans-serif; padding: 20px; background: #f0f2f5; display: flex; justify-content: center; align-items: flex-start; gap: 20px; flex-wrap: wrap; }
         .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
         h2 { color: #1c1e21; text-align: center; margin-bottom: 20px; font-size: 24px; }
@@ -15,18 +14,20 @@
         input:focus { border-color: #007aff; outline: none; }
         
         button { width: 100%; padding: 14px; background: #007aff; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s; }
-        button.m6-btn { background: #ff9500; } /* 六合彩專用掣顏色 */
+        button.m6-btn { background: #ff9500; } 
         button:active { transform: scale(0.98); }
         
         .result-container { margin-top: 20px; background: #f8f9fa; border-radius: 12px; padding: 15px; display: none; }
         .result { white-space: pre-wrap; font-family: monospace; font-size: 14px; color: #333; line-height: 1.6; }
         
-        /* 六合彩波波專屬樣式 */
         .ball { display: inline-block; width: 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 50%; color: white; font-weight: bold; margin: 2px 4px; font-family: sans-serif; box-shadow: 1px 1px 3px rgba(0,0,0,0.2); }
         .ball-red { background: #ff3b30; }
         .ball-green { background: #34c759; }
         .ball-blue { background: #007aff; }
         .m6-row { display: flex; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+        
+        /* 增加分隔線樣式 */
+        .divider { height: 1px; background: #eee; margin: 20px 0; }
     </style>
 </head>
 <body>
@@ -77,6 +78,24 @@
         <label>🔵 藍波數量</label>
         <input type="number" id="m6-blue" placeholder="留空代表隨機補位">
     </div>
+    
+    <div class="divider"></div>
+    
+    <div class="input-group">
+        <label>❌ 排除數字 (空格分開)</label>
+        <input type="text" id="m6-exclude" placeholder="例如: 4 14 24 (冇就留空)">
+    </div>
+    <div class="input-group">
+        <label>🔢 單數數量 (可留空)</label>
+        <input type="number" id="m6-odds" placeholder="留空代表隨機 (0-6)">
+    </div>
+    <div class="input-group">
+        <label>🔗 相連組數 (可留空)</label>
+        <input type="number" id="m6-consec" placeholder="留空代表隨機">
+    </div>
+    
+    <div class="divider"></div>
+
     <div class="input-group">
         <label>🎲 抽幾多注？</label>
         <input type="number" id="m6-batch" value="1">
@@ -90,9 +109,7 @@
 </div>
 
 <script>
-// ==========================================
-// 萬能抽號器邏輯
-// ==========================================
+// 共用函數：計算相連組數
 function countConsecutive(nums) {
     let count = 0;
     for (let i = 0; i < nums.length - 1; i++) {
@@ -101,6 +118,9 @@ function countConsecutive(nums) {
     return count;
 }
 
+// ==========================================
+// 萬能抽號器邏輯
+// ==========================================
 function generate() {
     const rule = document.getElementById('rule').value.trim().split(/\s+/);
     const maxNum = parseInt(rule[0]);
@@ -174,89 +194,117 @@ function generate() {
 
 
 // ==========================================
-// 六合彩顏色抽號器邏輯
+// 終極版六合彩顏色抽號器邏輯
 // ==========================================
 const M6_RED = [1, 2, 7, 8, 12, 13, 18, 19, 23, 24, 29, 30, 34, 35, 40, 45];
 const M6_BLUE = [3, 4, 9, 10, 14, 15, 20, 25, 26, 31, 36, 37, 41, 42, 47, 48];
 const M6_GREEN = [5, 6, 11, 16, 17, 21, 22, 27, 28, 32, 33, 38, 39, 43, 44, 46, 49];
 
 function generateMarkSix() {
+    // 1. 獲取顏色數量設定
     let rStr = document.getElementById('m6-red').value.trim();
     let gStr = document.getElementById('m6-green').value.trim();
     let bStr = document.getElementById('m6-blue').value.trim();
-    let batch = parseInt(document.getElementById('m6-batch').value) || 1;
-
-    // 將輸入轉做數字，留空就係 null
+    
     let rCount = rStr !== '' ? parseInt(rStr) : null;
     let gCount = gStr !== '' ? parseInt(gStr) : null;
     let bCount = bStr !== '' ? parseInt(bStr) : null;
 
-    // 計算總共指定咗幾多個波
     let specifiedTotal = (rCount || 0) + (gCount || 0) + (bCount || 0);
+    if (specifiedTotal > 6) { alert("⚠️ 指定嘅波數量加埋唔可以超過 6 個！"); return; }
 
-    if (specifiedTotal > 6) {
-        alert("⚠️ 指定嘅波數量加埋唔可以超過 6 個！");
-        return;
+    // 2. 獲取進階設定 (排除、單雙、相連)
+    let excludeStr = document.getElementById('m6-exclude').value.trim();
+    let exclude = excludeStr ? excludeStr.split(/\s+/).map(Number).filter(n => n > 0 && n <= 49) : [];
+    
+    let oddsStr = document.getElementById('m6-odds').value.trim();
+    let useOdds = oddsStr !== '';
+    let targetOdds = useOdds ? parseInt(oddsStr) : null;
+    
+    let consecStr = document.getElementById('m6-consec').value.trim();
+    let useConsec = consecStr !== '';
+    let targetConsec = useConsec ? parseInt(consecStr) : null;
+
+    let batch = parseInt(document.getElementById('m6-batch').value) || 1;
+
+    if (useOdds && (targetOdds < 0 || targetOdds > 6)) {
+        alert("⚠️ 單數數量必須喺 0-6 之間！"); return;
     }
 
+    // 3. 過濾排除數字後嘅號碼池
+    let fRed = M6_RED.filter(n => !exclude.includes(n));
+    let fGreen = M6_GREEN.filter(n => !exclude.includes(n));
+    let fBlue = M6_BLUE.filter(n => !exclude.includes(n));
+
+    if (rCount !== null && rCount > fRed.length) { alert("⚠️ 排除數字後，紅波數量唔夠抽！"); return; }
+    if (gCount !== null && gCount > fGreen.length) { alert("⚠️ 排除數字後，綠波數量唔夠抽！"); return; }
+    if (bCount !== null && bCount > fBlue.length) { alert("⚠️ 排除數字後，藍波數量唔夠抽！"); return; }
+
     let finalResults = [];
+    let remainingPick = 6 - specifiedTotal;
+
     for (let b = 0; b < batch; b++) {
-        let cand = [];
-        let remainingPool = []; // 用嚟裝留空顏色嘅波
+        let found = false;
+        
+        // 自動重試機制 (50000次)
+        for (let attempt = 0; attempt < 50000; attempt++) {
+            let cand = [];
+            let remPool = [];
 
-        // 1. 處理指定數量嘅顏色，留空就將該顏色放入 remainingPool
-        if (rCount !== null) {
-            if (rCount > M6_RED.length) { alert("⚠️ 紅波數量超過上限！"); return; }
-            cand.push(...[...M6_RED].sort(() => Math.random() - 0.5).slice(0, rCount));
-        } else {
-            remainingPool.push(...M6_RED);
-        }
+            // 抽指定顏色
+            if (rCount !== null) { cand.push(...[...fRed].sort(() => Math.random() - 0.5).slice(0, rCount)); } 
+            else { remPool.push(...fRed); }
 
-        if (gCount !== null) {
-            if (gCount > M6_GREEN.length) { alert("⚠️ 綠波數量超過上限！"); return; }
-            cand.push(...[...M6_GREEN].sort(() => Math.random() - 0.5).slice(0, gCount));
-        } else {
-            remainingPool.push(...M6_GREEN);
-        }
+            if (gCount !== null) { cand.push(...[...fGreen].sort(() => Math.random() - 0.5).slice(0, gCount)); } 
+            else { remPool.push(...fGreen); }
 
-        if (bCount !== null) {
-            if (bCount > M6_BLUE.length) { alert("⚠️ 藍波數量超過上限！"); return; }
-            cand.push(...[...M6_BLUE].sort(() => Math.random() - 0.5).slice(0, bCount));
-        } else {
-            remainingPool.push(...M6_BLUE);
-        }
+            if (bCount !== null) { cand.push(...[...fBlue].sort(() => Math.random() - 0.5).slice(0, bCount)); } 
+            else { remPool.push(...fBlue); }
 
-        // 2. 抽剩餘需要嘅波
-        let remainingPick = 6 - specifiedTotal;
-        if (remainingPick > 0) {
-            // 防呆：如果三隻色都填晒數字，但加埋唔夠 6 個 (例如 1紅 1綠 1藍)
-            if (remainingPool.length === 0) {
-                alert("⚠️ 你填晒三隻色，但加埋唔夠 6 個！\n請確保三個加埋等於 6，或者留空其中一啲色等系統補位。");
-                return;
+            // 隨機補位
+            if (remainingPick > 0) {
+                if (remPool.length < remainingPick) { alert("⚠️ 排除數字後，後備庫唔夠波補位！"); return; }
+                cand.push(...[...remPool].sort(() => Math.random() - 0.5).slice(0, remainingPick));
             }
-            // 喺 remainingPool 隨機抽補位波
-            cand.push(...remainingPool.sort(() => Math.random() - 0.5).slice(0, remainingPick));
+
+            // 檢查單數數量
+            if (useOdds) {
+                let oddCount = cand.filter(n => n % 2 !== 0).length;
+                if (oddCount !== targetOdds) continue; // 唔符合就即刻重新抽過
+            }
+
+            // 排序後檢查相連組數
+            cand.sort((a, b) => a - b);
+            if (useConsec) {
+                if (countConsecutive(cand) !== targetConsec) continue; // 唔符合就即刻重新抽過
+            }
+
+            // 如果全部條件都 Pass，就製成 HTML
+            let htmlBalls = cand.map(num => {
+                let colorClass = M6_RED.includes(num) ? 'ball-red' : M6_GREEN.includes(num) ? 'ball-green' : 'ball-blue';
+                return `<span class="ball ${colorClass}">${num}</span>`;
+            }).join('');
+            
+            finalResults.push(`<div class="m6-row"><strong style="width: 70px;">第 ${b+1} 注：</strong> ${htmlBalls}</div>`);
+            found = true;
+            break; // 成功搵到，跳出 50000 次重試迴圈
         }
 
-        // 3. 排好數字順序
-        cand.sort((a, b) => a - b);
-        
-        // 4. 幫數字加上對應顏色嘅 CSS class
-        let htmlBalls = cand.map(num => {
-            let colorClass = M6_RED.includes(num) ? 'ball-red' : M6_GREEN.includes(num) ? 'ball-green' : 'ball-blue';
-            return `<span class="ball ${colorClass}">${num}</span>`;
-        }).join('');
-        
-        finalResults.push(`<div class="m6-row"><strong style="width: 70px;">第 ${b+1} 注：</strong> ${htmlBalls}</div>`);
+        if (!found) {
+            finalResults.push(`<div class="m6-row"><strong style="width: 70px;">第 ${b+1} 注：</strong> <span style="color: #ff3b30; font-size: 14px;">條件太嚴苛，搵唔到合適組合 😢</span></div>`);
+        }
     }
 
     // 整理底部顯示嘅設定條件
     let condArr = [];
-    if (rCount !== null) condArr.push(`紅波x${rCount}`);
-    if (gCount !== null) condArr.push(`綠波x${gCount}`);
-    if (bCount !== null) condArr.push(`藍波x${bCount}`);
+    if (exclude.length > 0) condArr.push(`排除 [${exclude.join(',')}]`);
+    if (rCount !== null) condArr.push(`紅x${rCount}`);
+    if (gCount !== null) condArr.push(`綠x${gCount}`);
+    if (bCount !== null) condArr.push(`藍x${bCount}`);
+    if (useOdds) condArr.push(`${targetOdds}單${6-targetOdds}雙`);
+    if (useConsec) condArr.push(`相連${targetConsec}組`);
     
-    let conditionText = `<div style="margin-top:15px; font-size:12px; color:#666; border-top:1px dashed #ccc; padding-top:10px;">(設定: ${condArr.length === 0 ? '完全隨機抽出 6 個波' : condArr.join(', ') + '，其餘隨機補位'})</div>`;
+    let conditionText = `<div style="margin-top:15px; font-size:12px; color:#666; border-top:1px dashed #ccc; padding-top:10px;">(設定: ${condArr.length === 0 ? '完全隨機抽出 6 個波' : condArr.join(' | ') + (specifiedTotal < 6 ? ' | 其餘補位' : '')})</div>`;
 
     document.getElementById('m6-result-container').style.display = 'block';
     document.getElementById('m6-result').innerHTML = finalResults.join('') + conditionText;
