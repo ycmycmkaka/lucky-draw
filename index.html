@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>萬能抽號器 🍀 & 六合彩抽號器 🎱</title>
+
 <style>
 body {
     font-family: -apple-system, system-ui, sans-serif;
@@ -15,6 +16,7 @@ body {
     gap: 20px;
     flex-wrap: wrap;
 }
+
 .card {
     background: white;
     padding: 25px;
@@ -23,13 +25,18 @@ body {
     width: 100%;
     max-width: 400px;
 }
+
 h2 {
     color: #1c1e21;
     text-align: center;
     margin-bottom: 20px;
     font-size: 24px;
 }
-.input-group { margin-bottom: 15px; }
+
+.input-group {
+    margin-bottom: 15px;
+}
+
 label {
     display: block;
     margin-bottom: 5px;
@@ -37,6 +44,7 @@ label {
     color: #4b4f56;
     font-size: 14px;
 }
+
 input {
     width: 100%;
     padding: 12px;
@@ -45,10 +53,12 @@ input {
     box-sizing: border-box;
     font-size: 16px;
 }
+
 input:focus {
     border-color: #007aff;
     outline: none;
 }
+
 button {
     width: 100%;
     padding: 14px;
@@ -62,8 +72,14 @@ button {
     margin-top: 10px;
     transition: 0.2s;
 }
-button.m6-btn { background: #ff9500; }
-button:active { transform: scale(0.98); }
+
+button.m6-btn {
+    background: #ff9500;
+}
+
+button:active {
+    transform: scale(0.98);
+}
 
 .result-container {
     margin-top: 20px;
@@ -72,6 +88,7 @@ button:active { transform: scale(0.98); }
     padding: 15px;
     display: none;
 }
+
 .result {
     white-space: pre-wrap;
     font-family: monospace;
@@ -79,6 +96,7 @@ button:active { transform: scale(0.98); }
     color: #333;
     line-height: 1.6;
 }
+
 .ball {
     display: inline-block;
     width: 28px;
@@ -92,20 +110,32 @@ button:active { transform: scale(0.98); }
     font-family: sans-serif;
     box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
 }
-.ball-red { background: #ff3b30; }
-.ball-green { background: #34c759; }
-.ball-blue { background: #007aff; }
+
+.ball-red {
+    background: #ff3b30;
+}
+
+.ball-green {
+    background: #34c759;
+}
+
+.ball-blue {
+    background: #007aff;
+}
+
 .m6-row {
     display: flex;
     align-items: center;
     margin-bottom: 10px;
     flex-wrap: wrap;
 }
+
 .divider {
     height: 1px;
     background: #eee;
     margin: 20px 0;
 }
+
 .hint {
     font-size: 12px;
     color: #777;
@@ -233,8 +263,12 @@ button:active { transform: scale(0.98); }
 
 
 <script>
+// ===============================
+// 共用工具
+// ===============================
 function parseNums(str, min, max) {
     if (!str || !str.trim()) return [];
+
     return [...new Set(
         str.trim()
             .split(/\s+/)
@@ -243,15 +277,31 @@ function parseNums(str, min, max) {
     )];
 }
 
+// 正確 Fisher-Yates 洗牌，修正舊版 random 偏差問題
 function shuffle(arr) {
-    return [...arr].sort(() => Math.random() - 0.5);
+    const copy = [...arr];
+
+    for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+
+    return copy;
+}
+
+function sample(arr, count) {
+    return shuffle(arr).slice(0, count);
 }
 
 function countConsecutive(nums) {
     let count = 0;
+
     for (let i = 0; i < nums.length - 1; i++) {
-        if (nums[i + 1] - nums[i] === 1) count++;
+        if (nums[i + 1] - nums[i] === 1) {
+            count++;
+        }
     }
+
     return count;
 }
 
@@ -277,10 +327,11 @@ function generate() {
     const mustCount = useMustPool ? parseInt(mustCountStr) : 0;
 
     const oddsStr = document.getElementById('odds').value.trim();
-    const consecStr = document.getElementById('consec').value.trim();
     const useOdds = oddsStr !== '';
-    const useConsec = consecStr !== '';
     const targetOdds = useOdds ? parseInt(oddsStr) : null;
+
+    const consecStr = document.getElementById('consec').value.trim();
+    const useConsec = consecStr !== '';
     const targetConsec = useConsec ? parseInt(consecStr) : null;
 
     const batchCount = parseInt(document.getElementById('batch').value) || 1;
@@ -297,7 +348,9 @@ function generate() {
 
     const pool = [];
     for (let i = 1; i <= maxNum; i++) {
-        if (!exclude.includes(i)) pool.push(i);
+        if (!exclude.includes(i)) {
+            pool.push(i);
+        }
     }
 
     const mustPool = mustPoolInput.filter(n => !exclude.includes(n));
@@ -320,7 +373,7 @@ function generate() {
         }
     }
 
-    let finalResults = [];
+    const finalResults = [];
 
     for (let b = 0; b < batchCount; b++) {
         let found = false;
@@ -329,10 +382,10 @@ function generate() {
             let cand = [];
 
             if (useMustPool) {
-                cand.push(...shuffle(mustPool).slice(0, mustCount));
-                cand.push(...shuffle(normalPool).slice(0, pick - mustCount));
+                cand.push(...sample(mustPool, mustCount));
+                cand.push(...sample(normalPool, pick - mustCount));
             } else {
-                cand = shuffle(pool).slice(0, pick);
+                cand = sample(pool, pick);
             }
 
             cand.sort((a, b) => a - b);
@@ -357,14 +410,28 @@ function generate() {
     }
 
     let conditionText = `(設定: 1-${maxNum} 抽 ${pick}`;
-    if (exclude.length > 0) conditionText += `, 排除 [${exclude.join(',')}]`;
-    if (useMustPool) conditionText += `, 指定池 [${mustPoolInput.join(',')}] 必出 ${mustCount} 個`;
-    if (useOdds) conditionText += `, ${targetOdds}單${pick - targetOdds}雙`;
-    if (useConsec) conditionText += `, 相連${targetConsec}組`;
+
+    if (exclude.length > 0) {
+        conditionText += `, 排除 [${exclude.join(',')}]`;
+    }
+
+    if (useMustPool) {
+        conditionText += `, 指定池 [${mustPoolInput.join(',')}] 必出 ${mustCount} 個`;
+    }
+
+    if (useOdds) {
+        conditionText += `, ${targetOdds}單${pick - targetOdds}雙`;
+    }
+
+    if (useConsec) {
+        conditionText += `, 相連${targetConsec}組`;
+    }
+
     conditionText += `)`;
 
     document.getElementById('result-container').style.display = 'block';
-    document.getElementById('result').innerText = finalResults.join('\n') + `\n\n` + conditionText;
+    document.getElementById('result').innerText =
+        finalResults.join('\n') + `\n\n` + conditionText;
 }
 
 
@@ -382,30 +449,30 @@ function getM6ColorClass(num) {
 }
 
 function generateMarkSix() {
-    let rStr = document.getElementById('m6-red').value.trim();
-    let gStr = document.getElementById('m6-green').value.trim();
-    let bStr = document.getElementById('m6-blue').value.trim();
+    const rStr = document.getElementById('m6-red').value.trim();
+    const gStr = document.getElementById('m6-green').value.trim();
+    const bStr = document.getElementById('m6-blue').value.trim();
 
-    let rCount = rStr !== '' ? parseInt(rStr) : null;
-    let gCount = gStr !== '' ? parseInt(gStr) : null;
-    let bCount = bStr !== '' ? parseInt(bStr) : null;
+    const rCount = rStr !== '' ? parseInt(rStr) : null;
+    const gCount = gStr !== '' ? parseInt(gStr) : null;
+    const bCount = bStr !== '' ? parseInt(bStr) : null;
 
-    let exclude = parseNums(document.getElementById('m6-exclude').value, 1, 49);
+    const exclude = parseNums(document.getElementById('m6-exclude').value, 1, 49);
 
-    let mustPoolInput = parseNums(document.getElementById('m6-must-pool').value, 1, 49);
-    let mustCountStr = document.getElementById('m6-must-count').value.trim();
-    let useMustPool = mustPoolInput.length > 0 && mustCountStr !== '';
-    let mustCount = useMustPool ? parseInt(mustCountStr) : 0;
+    const mustPoolInput = parseNums(document.getElementById('m6-must-pool').value, 1, 49);
+    const mustCountStr = document.getElementById('m6-must-count').value.trim();
+    const useMustPool = mustPoolInput.length > 0 && mustCountStr !== '';
+    const mustCount = useMustPool ? parseInt(mustCountStr) : 0;
 
-    let oddsStr = document.getElementById('m6-odds').value.trim();
-    let useOdds = oddsStr !== '';
-    let targetOdds = useOdds ? parseInt(oddsStr) : null;
+    const oddsStr = document.getElementById('m6-odds').value.trim();
+    const useOdds = oddsStr !== '';
+    const targetOdds = useOdds ? parseInt(oddsStr) : null;
 
-    let consecStr = document.getElementById('m6-consec').value.trim();
-    let useConsec = consecStr !== '';
-    let targetConsec = useConsec ? parseInt(consecStr) : null;
+    const consecStr = document.getElementById('m6-consec').value.trim();
+    const useConsec = consecStr !== '';
+    const targetConsec = useConsec ? parseInt(consecStr) : null;
 
-    let batch = parseInt(document.getElementById('m6-batch').value) || 1;
+    const batch = parseInt(document.getElementById('m6-batch').value) || 1;
 
     if (rCount !== null && (rCount < 0 || rCount > 6)) {
         alert("紅波數量必須喺 0-6 之間！");
@@ -422,7 +489,8 @@ function generateMarkSix() {
         return;
     }
 
-    let specifiedColorTotal = (rCount || 0) + (gCount || 0) + (bCount || 0);
+    const specifiedColorTotal = (rCount || 0) + (gCount || 0) + (bCount || 0);
+
     if (specifiedColorTotal > 6) {
         alert("指定嘅紅綠藍波數量加埋唔可以超過 6 個！");
         return;
@@ -438,13 +506,15 @@ function generateMarkSix() {
         return;
     }
 
-    let pool = [];
+    const pool = [];
     for (let i = 1; i <= 49; i++) {
-        if (!exclude.includes(i)) pool.push(i);
+        if (!exclude.includes(i)) {
+            pool.push(i);
+        }
     }
 
-    let mustPool = mustPoolInput.filter(n => !exclude.includes(n));
-    let normalPool = pool.filter(n => !mustPool.includes(n));
+    const mustPool = mustPoolInput.filter(n => !exclude.includes(n));
+    const normalPool = pool.filter(n => !mustPool.includes(n));
 
     if (pool.length < 6) {
         alert("排除數字後，號碼池唔夠抽 6 個！");
@@ -463,33 +533,33 @@ function generateMarkSix() {
         }
     }
 
-    let finalResults = [];
+    const finalResults = [];
 
     for (let b = 0; b < batch; b++) {
         let found = false;
 
-        for (let attempt = 0; attempt < 80000; attempt++) {
+        for (let attempt = 0; attempt < 100000; attempt++) {
             let cand = [];
 
             if (useMustPool) {
-                cand.push(...shuffle(mustPool).slice(0, mustCount));
-                cand.push(...shuffle(normalPool).slice(0, 6 - mustCount));
+                cand.push(...sample(mustPool, mustCount));
+                cand.push(...sample(normalPool, 6 - mustCount));
             } else {
-                cand = shuffle(pool).slice(0, 6);
+                cand = sample(pool, 6);
             }
 
             cand.sort((a, b) => a - b);
 
-            let redNow = cand.filter(n => M6_RED.includes(n)).length;
-            let greenNow = cand.filter(n => M6_GREEN.includes(n)).length;
-            let blueNow = cand.filter(n => M6_BLUE.includes(n)).length;
+            const redNow = cand.filter(n => M6_RED.includes(n)).length;
+            const greenNow = cand.filter(n => M6_GREEN.includes(n)).length;
+            const blueNow = cand.filter(n => M6_BLUE.includes(n)).length;
 
             if (rCount !== null && redNow !== rCount) continue;
             if (gCount !== null && greenNow !== gCount) continue;
             if (bCount !== null && blueNow !== bCount) continue;
 
             if (useOdds) {
-                let oddNow = cand.filter(n => n % 2 !== 0).length;
+                const oddNow = cand.filter(n => n % 2 !== 0).length;
                 if (oddNow !== targetOdds) continue;
             }
 
@@ -497,37 +567,64 @@ function generateMarkSix() {
                 if (countConsecutive(cand) !== targetConsec) continue;
             }
 
-            let htmlBalls = cand.map(num => {
+            const htmlBalls = cand.map(num => {
                 return `<span class="ball ${getM6ColorClass(num)}">${num}</span>`;
             }).join('');
 
-            finalResults.push(`<div class="m6-row"><strong style="width:70px;">第 ${b + 1} 注：</strong>${htmlBalls}</div>`);
+            finalResults.push(
+                `<div class="m6-row"><strong style="width:70px;">第 ${b + 1} 注：</strong>${htmlBalls}</div>`
+            );
+
             found = true;
             break;
         }
 
         if (!found) {
-            finalResults.push(`<div class="m6-row"><strong style="width:70px;">第 ${b + 1} 注：</strong><span style="color:#ff3b30;">條件太嚴苛，搵唔到合適組合 😢</span></div>`);
+            finalResults.push(
+                `<div class="m6-row"><strong style="width:70px;">第 ${b + 1} 注：</strong><span style="color:#ff3b30;">條件太嚴苛，搵唔到合適組合 😢</span></div>`
+            );
         }
     }
 
-    let condArr = [];
-    if (exclude.length > 0) condArr.push(`排除 [${exclude.join(',')}]`);
-    if (useMustPool) condArr.push(`指定池 [${mustPoolInput.join(',')}] 必出 ${mustCount} 個`);
-    if (rCount !== null) condArr.push(`紅x${rCount}`);
-    if (gCount !== null) condArr.push(`綠x${gCount}`);
-    if (bCount !== null) condArr.push(`藍x${bCount}`);
-    if (useOdds) condArr.push(`${targetOdds}單${6 - targetOdds}雙`);
-    if (useConsec) condArr.push(`相連${targetConsec}組`);
+    const condArr = [];
 
-    let conditionText = `
+    if (exclude.length > 0) {
+        condArr.push(`排除 [${exclude.join(',')}]`);
+    }
+
+    if (useMustPool) {
+        condArr.push(`指定池 [${mustPoolInput.join(',')}] 必出 ${mustCount} 個`);
+    }
+
+    if (rCount !== null) {
+        condArr.push(`紅x${rCount}`);
+    }
+
+    if (gCount !== null) {
+        condArr.push(`綠x${gCount}`);
+    }
+
+    if (bCount !== null) {
+        condArr.push(`藍x${bCount}`);
+    }
+
+    if (useOdds) {
+        condArr.push(`${targetOdds}單${6 - targetOdds}雙`);
+    }
+
+    if (useConsec) {
+        condArr.push(`相連${targetConsec}組`);
+    }
+
+    const conditionText = `
         <div style="margin-top:15px; font-size:12px; color:#666; border-top:1px dashed #ccc; padding-top:10px;">
             設定：${condArr.length === 0 ? '完全隨機抽出 6 個波' : condArr.join(' | ')}
         </div>
     `;
 
     document.getElementById('m6-result-container').style.display = 'block';
-    document.getElementById('m6-result').innerHTML = finalResults.join('') + conditionText;
+    document.getElementById('m6-result').innerHTML =
+        finalResults.join('') + conditionText;
 }
 </script>
 
