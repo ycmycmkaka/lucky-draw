@@ -156,7 +156,7 @@ button:active {
 
     <div class="input-group">
         <label>2. 排除數字</label>
-        <input type="text" id="exclude" placeholder="例如: 4 14 24">
+        <input type="text" id="exclude" placeholder="例如: 1-10 14 24">
     </div>
 
     <div class="divider"></div>
@@ -269,12 +269,35 @@ button:active {
 function parseNums(str, min, max) {
     if (!str || !str.trim()) return [];
 
-    return [...new Set(
-        str.trim()
-            .split(/\s+/)
-            .map(Number)
-            .filter(n => Number.isInteger(n) && n >= min && n <= max)
-    )];
+    const result = [];
+
+    str.trim().split(/\s+/).forEach(part => {
+        // 支援 1-10、1~10、1–10
+        const rangeMatch = part.match(/^(\d+)\s*[-~–]\s*(\d+)$/);
+
+        if (rangeMatch) {
+            let start = parseInt(rangeMatch[1]);
+            let end = parseInt(rangeMatch[2]);
+
+            if (start > end) {
+                [start, end] = [end, start];
+            }
+
+            for (let n = start; n <= end; n++) {
+                if (n >= min && n <= max) {
+                    result.push(n);
+                }
+            }
+        } else {
+            const n = parseInt(part);
+
+            if (Number.isInteger(n) && n >= min && n <= max) {
+                result.push(n);
+            }
+        }
+    });
+
+    return [...new Set(result)];
 }
 
 // 正確 Fisher-Yates 洗牌，修正舊版 random 偏差問題
